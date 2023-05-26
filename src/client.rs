@@ -4,6 +4,10 @@ use crate::components::{
     anim_character, anim_grounded, anim_jump_layer, anim_velocity, player_camera_ref,
     player_grounded, player_local_velocity,
 };
+use std::f32::consts::PI;
+use std::rc::Rc;
+use ambient_api::components::core::primitives::cube;
+
 use ambient_api::{
     components::core::{
         app::main_scene,
@@ -20,25 +24,13 @@ mod anim;
 use anim::*;
 
 #[main]
-fn main() {
-    let _sun = Entity::new()
-        .with_merge(make_transformable())
-        .with_default(sun())
-        .with(rotation(), Quat::from_rotation_y(-1.))
-        .with_default(main_scene())
-        .with(light_diffuse(), Vec3::ONE)
-        .with(light_ambient(), Vec3::ONE * 0.2)
-        .with(fog_color(), vec3(1., 1., 1.))
-        .with(fog_density(), 0.1)
-        .with(fog_height_falloff(), 0.01)
-        .spawn();
+async fn main() {
 
-    Entity::new()
-        .with_merge(make_transformable())
-        .with_default(sky())
-        .spawn();
+    let parent_to_attach = Rc::new(RefCell::new(None));
+    let parent_to_attach_clone = parent_to_attach.clone();
 
     let animations = AnimationAssets::new();
+
     spawn_query((player(), user_id())).bind(move |players| {
         for (id, (_, user)) in players {
             // First, we check if this player is the "local" player, and only then do we attach a camera
@@ -73,6 +65,7 @@ fn main() {
                     asset::url("assets/xbot/X Bot.fbx").unwrap(),
                 )
                 .spawn();
+            parent_to_attach_clone.replace(Some(character));
 
             entity::add_component(id, children(), vec![character]);
 
@@ -89,9 +82,9 @@ fn main() {
     query((player(), player_camera_ref(), translation())).each_frame(move |players| {
         for (_, (_, camera_id, pos)) in players {
             let (delta, pressed) = input::get_delta();
-            if !cursor_lock.borrow_mut().auto_unlock_on_escape(&pressed) {
-                return;
-            }
+            // if !cursor_lock.borrow_mut().auto_unlock_on_escape(&pressed) {
+            //     return;
+            // }
 
             let old_direction = (entity::get_component(camera_id, lookat_target()).unwrap()
                 - entity::get_component(camera_id, translation()).unwrap())
@@ -220,4 +213,39 @@ fn main() {
             AnimationAssets::set_blend(character, blend);
         }
     });
+
+    sleep(1.0).await;
+    let unit_id = parent_to_attach.take().unwrap();
+    let entities = entity::get_animation_binder_mask_entities(unit_id);
+    let binders = entity::get_animation_binder_mask(unit_id);
+    println!("binders: {:?}", binders);
+    for (name, &joint_id) in binders.into_iter().zip(entities.iter()) {
+        if name == "LeftHandIndex1" {
+            // println!("LeftHandIndex1: {:?}", entity);
+            entity::add_components(
+                joint_id,
+                Entity::new()
+                    .with_default(components::is_attach_gun())
+            );
+
+            // here you tell the server that you want to hold a gun
+            messages::Wantgun::new(joint_id).send_server_reliable();
+
+            spawn_query(components::joint_parent()).bind( move |entities| {
+                for (gun_id, joint_id) in entities {
+                    println!("gun_id {:?}, joint_id: {:?}", gun_id, joint_id);
+                    query((local_to_world(), components::is_attach_gun())).each_frame( move |entities| {
+                        
+                        for (id, (trans, _)) in entities {
+                            println!("joint_id with should hold gun: {:?}", id);
+                            if id == joint_id {
+                                let (_, rot, pos) = trans.to_scale_rotation_translation();
+                                messages::Requestgunmove::new(gun_id, pos, rot).send_server_reliable();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    }
 }

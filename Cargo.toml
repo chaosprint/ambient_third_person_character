@@ -4,10 +4,10 @@ name = "ambient_third_person_character"
 edition = "2021"
 publish = false
 rust-version = "1.67.0"
-version = "0.2.1"
+version = "0.3.0"
 
 [dependencies]
-ambient_api = { version = "0.2.1" }
+ambient_api = { git = "https://github.com/AmbientRun/Ambient.git", branch = "main" }
 
 [[bin]]
 name = "third_person_character_client"

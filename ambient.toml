@@ -22,6 +22,14 @@ player_mouse_delta_x = { type = "F32", name = "Player mouse delta X", descriptio
     "Debuggable",
 ] }
 
+is_attach_gun = { type = "Bool", name = "Should holding gun", description = "True if the player should be holding a gun.", attributes = [
+    "Debuggable", "Networked",
+] }
+
+joint_parent = { type = "EntityId", name = "Joint Parent", description = "The parent of the joint.", attributes = [
+    "Debuggable", "Networked",
+] }
+
 [concepts.player_state]
 name = "Player State"
 description = "A player's state"
@@ -47,3 +55,16 @@ direction = { type = "Vec2", name = "Direction", description = "The movement dir
 jump = { type = "Bool", name = "Jump", description = "True if the player wants to jump." }
 run = { type = "Bool", name = "Run", description = "True if the player wants to run." }
 
+[messages.wantgun]
+description = "Describes if the player wants to hold a gun."
+
+[messages.wantgun.fields]
+id = { type = "EntityId", name = "Id", description = "The id of the entity that wants to hold a gun." }
+
+[messages.requestgunmove]
+description = "Describes if the player wants to move the gun."
+
+[messages.requestgunmove.fields]
+gunid = { type = "EntityId", name = "Gun Id", description = "The id of the gun that wants to move." }
+pos = { type = "Vec3", name = "Position", description = "The position of the gun." }
+rot = { type = "Quat", name = "Rotation", description = "The rotation of the gun." }

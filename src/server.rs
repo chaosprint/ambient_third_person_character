@@ -1,7 +1,7 @@
 use ambient_api::{
     components::core::{
         physics::{
-            box_collider, character_controller_height, character_controller_radius,
+            cube_collider, character_controller_height, character_controller_radius,
             physics_controlled, plane_collider,
         },
         player::player,
@@ -21,45 +21,12 @@ mod anim;
 use anim::*;
 
 #[main]
-pub fn main() {
+async fn main() {
     make_transformable()
         .with_default(quad())
         .with(scale(), Vec3::ONE * 1000.)
         .with(color(), vec4(0.5, 0.5, 0.5, 1.))
         .with_default(plane_collider())
-        .spawn();
-
-    for i in 0..10 {
-        let h = i as f32 + 1.0;
-        make_transformable()
-            .with_default(cube())
-            .with_default(cast_shadows())
-            .with(scale(), vec3(1., 1., h * 0.25))
-            .with(box_collider(), Vec3::ONE)
-            .with(translation(), vec3(h, -10.0, h * 0.25 * 0.5))
-            .with(color(), Vec4::ONE)
-            .spawn();
-    }
-
-    for i in 0..10 {
-        let h = i as f32 + 11.0;
-        make_transformable()
-            .with_default(cube())
-            .with_default(cast_shadows())
-            .with(scale(), vec3(1., 1., h * 0.25))
-            .with(box_collider(), Vec3::ONE)
-            .with(translation(), vec3(10.0, h - 20.0, h * 0.25 * 0.5))
-            .with(color(), vec4(1.0, 0.0, 0.0, 1.0))
-            .spawn();
-    }
-
-    make_transformable()
-        .with_default(cube())
-        .with_default(cast_shadows())
-        .with(scale(), vec3(10., 5., 1.0))
-        .with(box_collider(), Vec3::ONE)
-        .with(translation(), vec3(10.0, 3.0, 5.0))
-        .with(color(), vec4(0.0, 1.0, 0.0, 1.0))
         .spawn();
 
     spawn_query(player()).bind(move |players| {
@@ -78,6 +45,25 @@ pub fn main() {
                     .with_default(local_to_world()),
             );
         }
+    });
+
+    messages::Wantgun::subscribe(move |source, msg| {
+        let Some(player_id) = source.client_entity_id() else { return; };
+
+        println!("player {} says want a gun! at joint: {}", player_id, msg.id);
+        // let's give them a gun!
+        let gun = Entity::new()
+            .with_merge(make_transformable())
+            .with_default(cube())
+            .with(components::joint_parent(), msg.id)
+            .spawn();
+    });
+
+    messages::Requestgunmove::subscribe(move |source, msg| {
+        let Some(player_id) = source.client_entity_id() else { return; };
+
+        entity::set_component(msg.gunid, rotation(), msg.rot);
+        entity::set_component(msg.gunid, translation(), msg.pos);
     });
 
     messages::Input::subscribe(move |source, msg| {

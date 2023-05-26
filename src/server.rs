@@ -47,24 +47,24 @@ async fn main() {
         }
     });
 
-    messages::Wantgun::subscribe(move |source, msg| {
-        let Some(player_id) = source.client_entity_id() else { return; };
+    // messages::Wantgun::subscribe(move |source, msg| {
+    //     let Some(player_id) = source.client_entity_id() else { return; };
 
-        println!("player {} says want a gun! at joint: {}", player_id, msg.id);
-        // let's give them a gun!
-        let gun = Entity::new()
-            .with_merge(make_transformable())
-            .with_default(cube())
-            .with(components::joint_parent(), msg.id)
-            .spawn();
-    });
+    //     println!("player {} says want a gun! at joint: {}", player_id, msg.id);
+    //     // let's give them a gun!
+    //     let gun = Entity::new()
+    //         .with_merge(make_transformable())
+    //         .with_default(cube())
+    //         .with(components::joint_parent(), msg.id)
+    //         .spawn();
+    // });
 
-    messages::Requestgunmove::subscribe(move |source, msg| {
-        let Some(player_id) = source.client_entity_id() else { return; };
+    // messages::Requestgunmove::subscribe(move |source, msg| {
+    //     let Some(player_id) = source.client_entity_id() else { return; };
 
-        entity::set_component(msg.gunid, rotation(), msg.rot);
-        entity::set_component(msg.gunid, translation(), msg.pos);
-    });
+    //     entity::set_component(msg.gunid, rotation(), msg.rot);
+    //     entity::set_component(msg.gunid, translation(), msg.pos);
+    // });
 
     messages::Input::subscribe(move |source, msg| {
         let Some(player_id) = source.client_entity_id() else { return; };

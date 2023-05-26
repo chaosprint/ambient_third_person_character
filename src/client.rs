@@ -23,6 +23,8 @@ use ambient_api::{
 mod anim;
 use anim::*;
 
+use ambient_api::components::core::model::model_loaded;
+
 #[main]
 async fn main() {
 
@@ -214,38 +216,78 @@ async fn main() {
         }
     });
 
-    sleep(1.0).await;
-    let unit_id = parent_to_attach.take().unwrap();
-    let entities = entity::get_animation_binder_mask_entities(unit_id);
-    let binders = entity::get_animation_binder_mask(unit_id);
-    println!("binders: {:?}", binders);
-    for (name, &joint_id) in binders.into_iter().zip(entities.iter()) {
-        if name == "LeftHandIndex1" {
-            // println!("LeftHandIndex1: {:?}", entity);
-            entity::add_components(
-                joint_id,
-                Entity::new()
-                    .with_default(components::is_attach_gun())
-            );
+    spawn_query(anim_character()).requires(model_loaded()).bind(|ids|{
+        println!("anim_character: {:?}", ids);
+        for (unit_id, _) in ids {
+            let entities = entity::get_animation_binder_mask_entities(unit_id);
+            let binders = entity::get_animation_binder_mask(unit_id);
+            println!("binders: {:?}", binders);
+            for (name, &joint_id) in binders.into_iter().zip(entities.iter()) {
+                if name == "LeftHandIndex1" {
+                    // println!("LeftHandIndex1: {:?}", entity);
+                    entity::add_components(
+                        joint_id,
+                        Entity::new()
+                            .with_default(components::is_attach_gun())
+                    );
+                    // here you tell the server that you want to hold a gun
+                    // messages::Wantgun::new(joint_id).send_server_reliable();
+                    let gun_id = Entity::new()
+                        .with_merge(make_transformable())
+                        .with_default(cube())
+                        .with(components::joint_parent(), joint_id)
+                        .spawn();
 
-            // here you tell the server that you want to hold a gun
-            messages::Wantgun::new(joint_id).send_server_reliable();
-
-            spawn_query(components::joint_parent()).bind( move |entities| {
-                for (gun_id, joint_id) in entities {
-                    println!("gun_id {:?}, joint_id: {:?}", gun_id, joint_id);
                     query((local_to_world(), components::is_attach_gun())).each_frame( move |entities| {
-                        
                         for (id, (trans, _)) in entities {
-                            println!("joint_id with should hold gun: {:?}", id);
+                            // println!("joint_id with should hold gun: {:?}", id);
                             if id == joint_id {
                                 let (_, rot, pos) = trans.to_scale_rotation_translation();
-                                messages::Requestgunmove::new(gun_id, pos, rot).send_server_reliable();
+                                entity::set_component(gun_id, rotation(), rot);
+                                entity::set_component(gun_id, translation(), pos);
+                                // messages::Requestgunmove::new(gun_id, pos, rot).send_server_reliable();
                             }
                         }
                     });
                 }
-            });
+            }
         }
-    }
+    });
+
+    // sleep(1.0).await;
+    // let unit_id = parent_to_attach.take().unwrap();
+    // let entities = entity::get_animation_binder_mask_entities(unit_id);
+    // let binders = entity::get_animation_binder_mask(unit_id);
+    // println!("binders: {:?}", binders);
+    // for (name, &joint_id) in binders.into_iter().zip(entities.iter()) {
+    //     if name == "LeftHandIndex1" {
+    //         // println!("LeftHandIndex1: {:?}", entity);
+    //         entity::add_components(
+    //             joint_id,
+    //             Entity::new()
+    //                 .with_default(components::is_attach_gun())
+    //         );
+
+            // here you tell the server that you want to hold a gun
+            // messages::Wantgun::new(joint_id).send_server_reliable();
+
+            // spawn_query(components::joint_parent()).bind( move |entities| {
+            //     for (gun_id, joint_id) in entities {
+            //         println!("gun_id {:?}, joint_id: {:?}", gun_id, joint_id);
+            //         query((local_to_world(), components::is_attach_gun())).each_frame( move |entities| {
+                        
+            //             for (id, (trans, _)) in entities {
+            //                 println!("joint_id with should hold gun: {:?}", id);
+            //                 if id == joint_id {
+            //                     let (_, rot, pos) = trans.to_scale_rotation_translation();
+            //                     entity::set_component(gun_id, rotation(), rot);
+            //                     entity::set_component(gun_id, translation(), pos);
+            //                     // messages::Requestgunmove::new(gun_id, pos, rot).send_server_reliable();
+            //                 }
+            //             }
+            //         });
+            //     }
+            // });
+        // }
+    // }
 }

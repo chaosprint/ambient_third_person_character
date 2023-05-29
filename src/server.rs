@@ -7,6 +7,7 @@ use ambient_api::{
         player::player,
         primitives::{cube, quad},
         rendering::color,
+        prefab::prefab_from_url,
         transform::{local_to_parent, local_to_world, rotation, scale, translation},
     },
     concepts::make_transformable,
@@ -22,12 +23,16 @@ use anim::*;
 
 #[main]
 async fn main() {
+    // make_transformable()
+    //     .with_default(quad())
+    //     .with(scale(), Vec3::ONE * 1000.)
+    //     .with(color(), vec4(0.5, 0.5, 0.5, 1.))
+    // .with_default(plane_collider())
+    //     .spawn();
+
     make_transformable()
-        .with_default(quad())
-        .with(scale(), Vec3::ONE * 1000.)
-        .with(color(), vec4(0.5, 0.5, 0.5, 1.))
-        .with_default(plane_collider())
-        .spawn();
+    .with(prefab_from_url(), asset::url("assets/Shape.glb").unwrap())
+    .spawn();
 
     spawn_query(player()).bind(move |players| {
         for (id, _) in players {
@@ -46,25 +51,6 @@ async fn main() {
             );
         }
     });
-
-    // messages::Wantgun::subscribe(move |source, msg| {
-    //     let Some(player_id) = source.client_entity_id() else { return; };
-
-    //     println!("player {} says want a gun! at joint: {}", player_id, msg.id);
-    //     // let's give them a gun!
-    //     let gun = Entity::new()
-    //         .with_merge(make_transformable())
-    //         .with_default(cube())
-    //         .with(components::joint_parent(), msg.id)
-    //         .spawn();
-    // });
-
-    // messages::Requestgunmove::subscribe(move |source, msg| {
-    //     let Some(player_id) = source.client_entity_id() else { return; };
-
-    //     entity::set_component(msg.gunid, rotation(), msg.rot);
-    //     entity::set_component(msg.gunid, translation(), msg.pos);
-    // });
 
     messages::Input::subscribe(move |source, msg| {
         let Some(player_id) = source.client_entity_id() else { return; };

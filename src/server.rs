@@ -32,6 +32,7 @@ async fn main() {
 
     make_transformable()
     .with(prefab_from_url(), asset::url("assets/Shape.glb").unwrap())
+    .with(scale(), Vec3::ONE * 3.1)
     .spawn();
 
     spawn_query(player()).bind(move |players| {

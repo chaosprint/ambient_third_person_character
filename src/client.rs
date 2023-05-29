@@ -66,6 +66,7 @@ async fn main() {
                     prefab_from_url(),
                     asset::url("assets/xbot/X Bot.fbx").unwrap(),
                 )
+                .with(translation(), vec3(0.0, 0.0, 1.0))
                 .spawn();
             parent_to_attach_clone.replace(Some(character));
 
@@ -148,11 +149,14 @@ async fn main() {
             let current_grounded =
                 entity::get_component(player, player_grounded()).unwrap_or_default();
 
+            // println!("current_grounded {:?}", current_grounded);
             const STEPS: f32 = 100.0;
             const HALF: Vec3 = Vec3::splat(0.5);
             let mut current_velocity = (player_velocity * STEPS - HALF).ceil() / STEPS; // quantize
 
             current_velocity.z = current_velocity.z.signum();
+
+            println!("current_velocity: {:?}", current_velocity);
 
             let blend_direction = Vec2::new(
                 if !current_grounded { 1.0 } else { -1.0 },
